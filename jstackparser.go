@@ -130,11 +130,9 @@ func ParseJStack(jstackStr string) (*JavaThreadDump, error) {
 	jts := make(map[string]*JavaThread)
 	for i, line := range lines {
 		if i == 0 {
-			log.Printf("Date %s", line)
 			jtd.Date = line
 		} else if strings.HasPrefix(line, "Full thread dump ") {
 			validVersion = true
-			log.Printf("Version %s", line[17:])
 			jtd.VersionString = line[17:]
 		} else if validVersion && strings.HasPrefix(line, "\"") {
 			if currJT.Name != "" {
