@@ -197,6 +197,7 @@ func ParseJStack(jstackStr string) (*JavaThreadDump, error) {
 			jtd.LockOwners[lock] = jt.TID
 		}
 	}
+	jtd.analyze()
 	log.Debug("Finished parsing.")
 	return jtd, nil
 }
