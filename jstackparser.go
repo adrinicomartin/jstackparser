@@ -80,8 +80,8 @@ func (jt *JavaThread) analyze() {
 	for _, stackLine := range jt.Stack {
 		if strings.HasPrefix(stackLine, "\tat ") {
 			depth++
+			h.Write([]byte(stackLine))
 		}
-		h.Write([]byte(stackLine))
 	}
 	jt.StackHash = fmt.Sprintf("%x", h.Sum(nil))
 	jt.StackDepth = depth
