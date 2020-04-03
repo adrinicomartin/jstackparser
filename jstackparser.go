@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -104,26 +105,38 @@ func newJavaThread() *JavaThread {
 	return jt
 }
 
+var re *regexp.Regexp
+var reWLock *regexp.Regexp
+var reStatus *regexp.Regexp
+var reLock *regexp.Regexp
+var regexCompileOnce sync.Once
+
 //ParseJStack receives a jstack command output and parse it to extract the JavaThreadDump structure.
 func ParseJStack(jstackStr string) (*JavaThreadDump, error) {
 	lines := strings.Split(jstackStr, "\n")
 	validVersion := false
-	re, err := regexp.Compile("\"([^\"]+)\" (#[0-9]+)( daemon)? prio=([0-9]+)? os_prio=([0-9]+) tid=([a-z0-9]+) nid=([a-z0-9]+) ([^$]*)")
-	if err != nil {
-		return nil, err
-	}
-	reStatus, err := regexp.Compile("[ ]+java.lang.Thread.State: ([^ ]*)")
-	if err != nil {
-		return nil, err
-	}
-	reLock, err := regexp.Compile("[\t]+- locked <([^>]+)>")
-	if err != nil {
-		return nil, err
-	}
-	reWLock, err := regexp.Compile("[\t]+- waiting to lock <([^>]+)>")
-	if err != nil {
-		return nil, err
-	}
+
+	regexCompileOnce.Do(func() {
+		var err error
+		re, err = regexp.Compile("\"([^\"]+)\" (#[0-9]+)( daemon)? prio=([0-9]+)? os_prio=([0-9]+) tid=([a-z0-9]+) nid=([a-z0-9]+) ([^$]*)")
+		if err != nil {
+			re = nil
+		}
+		reStatus, err = regexp.Compile("[ ]+java.lang.Thread.State: ([^ ]*)")
+		if err != nil {
+			reStatus = nil
+		}
+		reLock, err = regexp.Compile("[\t]+- locked <([^>]+)>")
+		if err != nil {
+			reLock = nil
+		}
+		reWLock, err = regexp.Compile("[\t]+- waiting to lock <([^>]+)>")
+		if err != nil {
+			reWLock = nil
+		}
+		log.Debugf("Parser regex loaded.")
+	})
+
 	jtd := new(JavaThreadDump)
 
 	currJT := newJavaThread()
